@@ -1,0 +1,205 @@
+{
+  "info": {
+    "name": "JAAP Backend API",
+    "description": "Complete API collection for JAAP Backend with authentication and message management",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"SecurePassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "register"]
+            },
+            "description": "Create a new admin user. Use this to create the first admin."
+          },
+          "response": []
+        },
+        {
+          "name": "Login Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.token) {",
+                  "        pm.collectionVariables.set(\"token\", jsonData.token);",
+                  "        console.log(\"Token saved:\", jsonData.token);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"SecurePassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "login"]
+            },
+            "description": "Login with admin credentials. Returns a JWT token that is automatically saved to collection variables."
+          },
+          "response": []
+        }
+      ],
+      "description": "Authentication endpoints for admin users"
+    },
+    {
+      "name": "Messages",
+      "item": [
+        {
+          "name": "Get All Messages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["messages"]
+            },
+            "description": "Get all messages sorted by pinned status and creation date. No authentication required."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Message",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"This is a test message\",\n  \"link\": \"https://example.com\",\n  \"isPinned\": false,\n  \"scheduledAt\": null,\n  \"isSent\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["messages"]
+            },
+            "description": "Create a new message. Requires JWT authentication. Login first to get the token."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Message",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/messages/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["messages", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "replace-with-message-id",
+                  "description": "MongoDB ObjectId of the message to delete"
+                }
+              ]
+            },
+            "description": "Delete a message by ID. Requires JWT authentication. Replace :id with actual message ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Toggle Pin Message",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/messages/:id/pin",
+              "host": ["{{baseUrl}}"],
+              "path": ["messages", ":id", "pin"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "replace-with-message-id",
+                  "description": "MongoDB ObjectId of the message to pin/unpin"
+                }
+              ]
+            },
+            "description": "Toggle the pinned status of a message. Requires JWT authentication. Replace :id with actual message ID."
+          },
+          "response": []
+        }
+      ],
+      "description": "Message management endpoints"
+    }
+  ]
+}

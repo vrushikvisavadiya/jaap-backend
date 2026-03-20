@@ -1,8 +1,19 @@
 import { MongooseModule } from '@nestjs/mongoose';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
-const mongoUri = process.env.MONGO_URI;
-if (!mongoUri) {
-  throw new Error('MONGO_URI is not defined in .env');
-}
+export const DatabaseConfig = MongooseModule.forRootAsync({
+  imports: [ConfigModule],
+  inject: [ConfigService],
+  useFactory: (configService: ConfigService) => {
+    const mongoUri = configService.get<string>('MONGO_URI');
+    console.log('mongoUri: ', mongoUri);
 
-export const DatabaseConfig = MongooseModule.forRoot(mongoUri);
+    if (!mongoUri) {
+      throw new Error('MONGO_URI is not defined in .env');
+    }
+
+    return {
+      uri: mongoUri,
+    };
+  },
+});
