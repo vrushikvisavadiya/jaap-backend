@@ -14,35 +14,40 @@ export class AuthService {
 
   // Admin login
   async login(username: string, password: string) {
-    try {
-      const admin = await this.adminModel.findOne({ username });
-      if (!admin) throw new BadRequestException('Invalid credentials');
+    const admin = await this.adminModel.findOne({ username });
+    if (!admin) throw new BadRequestException('Invalid credentials');
 
-      const isMatch: boolean = await bcrypt.compare(password, admin.password);
-      if (!isMatch) throw new BadRequestException('Invalid credentials');
+    const isMatch: boolean = await bcrypt.compare(password, admin.password);
+    if (!isMatch) throw new BadRequestException('Invalid credentials');
 
-      return {
-        token: this.jwtService.sign({
-          id: admin._id,
-          username: admin.username,
-        }),
-      };
-    } catch (err) {
-      throw new BadRequestException(
-        err instanceof Error ? err.message : 'Login failed',
-      );
-    }
+    const token = this.jwtService.sign({
+      id: admin._id,
+      username: admin.username,
+    });
+
+    return {
+      token,
+      user: {
+        id: admin._id,
+        username: admin.username,
+      },
+    };
   }
 
   // Create initial admin
   async createAdmin(username: string, password: string) {
-    try {
-      const hash: string = await bcrypt.hash(password, 12);
-      return this.adminModel.create({ username, password: hash });
-    } catch (err) {
-      throw new BadRequestException(
-        err instanceof Error ? err.message : 'Admin creation failed',
-      );
+    // Check if admin already exists
+    const existingAdmin = await this.adminModel.findOne({ username });
+    if (existingAdmin) {
+      throw new BadRequestException('Admin with this username already exists');
     }
+
+    const hash: string = await bcrypt.hash(password, 12);
+    const admin = await this.adminModel.create({ username, password: hash });
+
+    return {
+      id: admin._id,
+      username: admin.username,
+    };
   }
 }

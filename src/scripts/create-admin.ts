@@ -18,7 +18,7 @@ async function createAdmin() {
     const admin = await authService.createAdmin(username, password);
     console.log('✅ Admin created successfully!');
     console.log('Username:', admin.username);
-    console.log('ID:', admin._id);
+    console.log('ID:', admin.id);
   } catch (error) {
     console.error('❌ Error creating admin:', error.message);
     process.exit(1);

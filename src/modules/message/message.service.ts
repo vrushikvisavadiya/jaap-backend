@@ -12,30 +12,48 @@ export class MessageService {
   // Create message
   async create(data: Partial<Message>) {
     const msg = new this.messageModel(data);
-    return msg.save();
+    const savedMsg = await msg.save();
+    return {
+      message: savedMsg,
+    };
   }
 
   // Get all messages (pinned first)
   async findAll() {
-    return this.messageModel
+    const messages = await this.messageModel
       .find()
       .sort({ isPinned: -1, createdAt: -1 })
       .exec();
+
+    return {
+      messages,
+      total: messages.length,
+    };
   }
 
   // Delete message
   async delete(id: string) {
     const msg = await this.messageModel.findByIdAndDelete(id);
     if (!msg) throw new NotFoundException('Message not found');
-    return msg;
+
+    return {
+      message: msg,
+      deleted: true,
+    };
   }
 
   // Pin/unpin
   async togglePin(id: string) {
     const msg = await this.messageModel.findById(id);
     if (!msg) throw new NotFoundException('Message not found');
+
     msg.isPinned = !msg.isPinned;
-    return msg.save();
+    const updatedMsg = await msg.save();
+
+    return {
+      message: updatedMsg,
+      isPinned: updatedMsg.isPinned,
+    };
   }
 
   // Get messages for admin history (last 2 days)
