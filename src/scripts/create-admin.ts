@@ -10,17 +10,17 @@ async function createAdmin() {
   const password = process.argv[3];
 
   if (!username || !password) {
-    console.error('❌ Usage: npm run create-admin <username> <password>');
+    console.error('Usage: npm run create-admin <username> <password>');
     process.exit(1);
   }
 
   try {
     const admin = await authService.createAdmin(username, password);
-    console.log('✅ Admin created successfully!');
+    console.log('Admin created successfully!');
     console.log('Username:', admin.username);
     console.log('ID:', admin.id);
   } catch (error) {
-    console.error('❌ Error creating admin:', error.message);
+    console.error('Error creating admin:', error.message);
     process.exit(1);
   }
 

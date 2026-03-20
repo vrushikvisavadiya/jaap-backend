@@ -15,6 +15,13 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 export class MessageController {
   constructor(private readonly messageService: MessageService) {}
 
+  // Admin history - MUST be before :id routes
+  @UseGuards(JwtAuthGuard)
+  @Get('admin/history')
+  async getHistory() {
+    return this.messageService.history();
+  }
+
   @UseGuards(JwtAuthGuard)
   @Post()
   async create(@Body() body: Partial<any>) {

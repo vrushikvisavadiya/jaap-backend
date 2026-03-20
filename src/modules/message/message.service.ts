@@ -60,6 +60,34 @@ export class MessageService {
   async history() {
     const twoDaysAgo = new Date();
     twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-    return this.messageModel.find({ createdAt: { $gte: twoDaysAgo } }).exec();
+    const messages = await this.messageModel
+      .find({ createdAt: { $gte: twoDaysAgo } })
+      .sort({ createdAt: -1 })
+      .exec();
+
+    return {
+      messages,
+      total: messages.length,
+      period: 'Last 2 days',
+    };
+  }
+
+  // Get scheduled messages
+  async getScheduledMessages(now: Date) {
+    return this.messageModel.find({
+      scheduledAt: { $lte: now },
+      isSent: false,
+    });
+  }
+
+  // Delete messages older than 2 days and not pinned
+  async deleteOldMessages() {
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+    return this.messageModel.deleteMany({
+      createdAt: { $lte: twoDaysAgo },
+      isPinned: false,
+    });
   }
 }

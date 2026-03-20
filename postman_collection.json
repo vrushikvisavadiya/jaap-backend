@@ -1,8 +1,9 @@
 {
   "info": {
-    "name": "JAAP Backend API",
-    "description": "Complete API collection for JAAP Backend with authentication and message management",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    "name": "JAAP Backend API - Complete",
+    "description": "Complete API collection for JAAP Backend with authentication, message management, and admin features",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "2.0.0"
   },
   "variable": [
     {
@@ -18,7 +19,7 @@
   ],
   "item": [
     {
-      "name": "Auth",
+      "name": "Authentication",
       "item": [
         {
           "name": "Register Admin",
@@ -39,7 +40,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["admin", "register"]
             },
-            "description": "Create a new admin user. Use this to create the first admin."
+            "description": "Create a new admin user. Use this to create the first admin.\n\n**Response Format:**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Request successful\",\n  \"data\": {\n    \"id\": \"507f1f77bcf86cd799439011\",\n    \"username\": \"admin\"\n  }\n}\n```"
           },
           "response": []
         },
@@ -52,9 +53,9 @@
                 "exec": [
                   "if (pm.response.code === 200 || pm.response.code === 201) {",
                   "    var jsonData = pm.response.json();",
-                  "    if (jsonData.token) {",
-                  "        pm.collectionVariables.set(\"token\", jsonData.token);",
-                  "        console.log(\"Token saved:\", jsonData.token);",
+                  "    if (jsonData.status === 'success' && jsonData.data && jsonData.data.token) {",
+                  "        pm.collectionVariables.set(\"token\", jsonData.data.token);",
+                  "        console.log(\"✅ Token saved:\", jsonData.data.token);",
                   "    }",
                   "}"
                 ],
@@ -79,7 +80,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["admin", "login"]
             },
-            "description": "Login with admin credentials. Returns a JWT token that is automatically saved to collection variables."
+            "description": "Login with admin credentials. Returns a JWT token that is automatically saved to collection variables.\n\n**Response Format:**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Request successful\",\n  \"data\": {\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"user\": {\n      \"id\": \"507f1f77bcf86cd799439011\",\n      \"username\": \"admin\"\n    }\n  }\n}\n```"
           },
           "response": []
         }
@@ -99,12 +100,12 @@
               "host": ["{{baseUrl}}"],
               "path": ["messages"]
             },
-            "description": "Get all messages sorted by pinned status and creation date. No authentication required."
+            "description": "Get all messages sorted by pinned status (pinned first) and creation date. No authentication required.\n\n**Response Format:**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Request successful\",\n  \"data\": {\n    \"messages\": [\n      {\n        \"_id\": \"507f1f77bcf86cd799439011\",\n        \"message\": \"Welcome to JAAP!\",\n        \"link\": \"https://example.com\",\n        \"isPinned\": true,\n        \"scheduledAt\": null,\n        \"isSent\": false,\n        \"createdAt\": \"2025-03-20T10:30:00.000Z\",\n        \"updatedAt\": \"2025-03-20T10:30:00.000Z\"\n      }\n    ],\n    \"total\": 1\n  }\n}\n```"
           },
           "response": []
         },
         {
-          "name": "Create Message",
+          "name": "Create Instant Message",
           "request": {
             "auth": {
               "type": "bearer",
@@ -125,14 +126,47 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"message\": \"This is a test message\",\n  \"link\": \"https://example.com\",\n  \"isPinned\": false,\n  \"scheduledAt\": null,\n  \"isSent\": false\n}"
+              "raw": "{\n  \"message\": \"This is an instant message\",\n  \"link\": \"https://example.com\",\n  \"isPinned\": false\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/messages",
               "host": ["{{baseUrl}}"],
               "path": ["messages"]
             },
-            "description": "Create a new message. Requires JWT authentication. Login first to get the token."
+            "description": "Create an instant message (sent immediately). Requires JWT authentication.\n\n**Request Body:**\n- `message` (required): Message text\n- `link` (optional): URL link\n- `isPinned` (optional): Pin status (default: false)\n\n**Response Format:**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Request successful\",\n  \"data\": {\n    \"message\": {\n      \"_id\": \"507f1f77bcf86cd799439011\",\n      \"message\": \"This is an instant message\",\n      \"link\": \"https://example.com\",\n      \"isPinned\": false,\n      \"isSent\": false,\n      \"createdAt\": \"2025-03-20T11:00:00.000Z\",\n      \"updatedAt\": \"2025-03-20T11:00:00.000Z\"\n    }\n  }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Scheduled Message",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"This is a scheduled message\",\n  \"link\": \"https://example.com\",\n  \"isPinned\": false,\n  \"scheduledAt\": \"2025-03-21T10:00:00.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["messages"]
+            },
+            "description": "Create a scheduled message (sent at specified time). Requires JWT authentication.\n\n**Request Body:**\n- `message` (required): Message text\n- `link` (optional): URL link\n- `isPinned` (optional): Pin status (default: false)\n- `scheduledAt` (required for scheduled): ISO 8601 date-time\n\n**Note:** The scheduler runs every minute and will send this message when `scheduledAt` time is reached.\n\n**Response Format:**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Request successful\",\n  \"data\": {\n    \"message\": {\n      \"_id\": \"507f1f77bcf86cd799439011\",\n      \"message\": \"This is a scheduled message\",\n      \"link\": \"https://example.com\",\n      \"isPinned\": false,\n      \"scheduledAt\": \"2025-03-21T10:00:00.000Z\",\n      \"isSent\": false,\n      \"createdAt\": \"2025-03-20T11:00:00.000Z\",\n      \"updatedAt\": \"2025-03-20T11:00:00.000Z\"\n    }\n  }\n}\n```"
           },
           "response": []
         },
@@ -163,7 +197,7 @@
                 }
               ]
             },
-            "description": "Delete a message by ID. Requires JWT authentication. Replace :id with actual message ID."
+            "description": "Delete a message by ID. Requires JWT authentication.\n\n**Path Parameter:**\n- `id`: MongoDB ObjectId of the message\n\n**Response Format:**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Request successful\",\n  \"data\": {\n    \"message\": {\n      \"_id\": \"507f1f77bcf86cd799439011\",\n      \"message\": \"Deleted message\",\n      \"isPinned\": false,\n      \"isSent\": false\n    },\n    \"deleted\": true\n  }\n}\n```"
           },
           "response": []
         },
@@ -194,12 +228,42 @@
                 }
               ]
             },
-            "description": "Toggle the pinned status of a message. Requires JWT authentication. Replace :id with actual message ID."
+            "description": "Toggle the pinned status of a message. If pinned, it will be unpinned and vice versa. Requires JWT authentication.\n\n**Path Parameter:**\n- `id`: MongoDB ObjectId of the message\n\n**Response Format:**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Request successful\",\n  \"data\": {\n    \"message\": {\n      \"_id\": \"507f1f77bcf86cd799439011\",\n      \"message\": \"Pinned message\",\n      \"isPinned\": true,\n      \"isSent\": false,\n      \"createdAt\": \"2025-03-20T11:00:00.000Z\",\n      \"updatedAt\": \"2025-03-20T11:05:00.000Z\"\n    },\n    \"isPinned\": true\n  }\n}\n```"
           },
           "response": []
         }
       ],
       "description": "Message management endpoints"
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Get Message History (Last 2 Days)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/messages/admin/history",
+              "host": ["{{baseUrl}}"],
+              "path": ["messages", "admin", "history"]
+            },
+            "description": "Retrieve all messages from the last 2 days for admin review. Requires JWT authentication.\n\n**Response Format:**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Request successful\",\n  \"data\": {\n    \"messages\": [\n      {\n        \"_id\": \"507f1f77bcf86cd799439011\",\n        \"message\": \"Recent message\",\n        \"link\": \"https://example.com\",\n        \"isPinned\": false,\n        \"scheduledAt\": null,\n        \"isSent\": true,\n        \"createdAt\": \"2025-03-20T10:30:00.000Z\",\n        \"updatedAt\": \"2025-03-20T10:30:00.000Z\"\n      }\n    ],\n    \"total\": 1,\n    \"period\": \"Last 2 days\"\n  }\n}\n```"
+          },
+          "response": []
+        }
+      ],
+      "description": "Admin-specific endpoints for monitoring and management"
     }
   ]
 }
