@@ -1,9 +1,9 @@
 {
   "info": {
     "name": "JAAP Backend API - Complete",
-    "description": "Complete API collection for JAAP Backend with authentication, message management, and admin features",
+    "description": "Complete API collection for JAAP Backend with authentication, message management, device management, and admin features",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "version": "2.0.0"
+    "version": "3.0.0"
   },
   "variable": [
     {
@@ -13,6 +13,11 @@
     },
     {
       "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "fcmToken",
       "value": "",
       "type": "string"
     }
@@ -88,6 +93,164 @@
       "description": "Authentication endpoints for admin users"
     },
     {
+      "name": "Devices",
+      "item": [
+        {
+          "name": "Register Device",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.status === 'success' && jsonData.data && jsonData.data.device) {",
+                  "        pm.collectionVariables.set(\"fcmToken\", jsonData.data.device.fcmToken);",
+                  "        console.log(\"✅ FCM Token saved:\", jsonData.data.device.fcmToken);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fcmToken\": \"test-fcm-token-android-123\",\n  \"deviceType\": \"android\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/devices/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "register"]
+            },
+            "description": "Register a new device or update existing device token. Public endpoint - no authentication required.\n\n**Request Body:**\n- `fcmToken` (required): Firebase Cloud Messaging token\n- `deviceType` (required): \"android\" or \"ios\"\n\n**Behavior:**\n- If token exists and is inactive → Reactivates it\n- If token exists and is active → Updates device type if changed\n- If token is new → Creates new device record\n\n**Response Format (New Device):**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Request successful\",\n  \"data\": {\n    \"device\": {\n      \"id\": \"507f1f77bcf86cd799439011\",\n      \"fcmToken\": \"test-fcm-token-android-123\",\n      \"deviceType\": \"android\",\n      \"isActive\": true\n    },\n    \"isNew\": true\n  }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Active Devices",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/devices/active",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "active"]
+            },
+            "description": "Get all active devices. Requires JWT authentication (Admin only).\n\n**Response Format:**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Request successful\",\n  \"data\": {\n    \"devices\": [\n      {\n        \"_id\": \"507f1f77bcf86cd799439011\",\n        \"fcmToken\": \"token1\",\n        \"deviceType\": \"android\",\n        \"isActive\": true,\n        \"createdAt\": \"2025-03-20T10:00:00.000Z\",\n        \"updatedAt\": \"2025-03-20T10:00:00.000Z\"\n      }\n    ],\n    \"total\": 1\n  }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Device Statistics",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/devices/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "stats"]
+            },
+            "description": "Get device statistics including total, active, inactive, and platform breakdown. Requires JWT authentication (Admin only).\n\n**Response Format:**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Request successful\",\n  \"data\": {\n    \"total\": 150,\n    \"active\": 120,\n    \"inactive\": 30,\n    \"byPlatform\": {\n      \"android\": 80,\n      \"ios\": 40\n    }\n  }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Deactivate Device",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/devices/:fcmToken",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", ":fcmToken"],
+              "variable": [
+                {
+                  "key": "fcmToken",
+                  "value": "{{fcmToken}}",
+                  "description": "FCM token of the device to deactivate"
+                }
+              ]
+            },
+            "description": "Deactivate a device (soft delete). Requires JWT authentication (Admin only).\n\n**Path Parameter:**\n- `fcmToken`: The FCM token of the device to deactivate\n\n**Response Format:**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Request successful\",\n  \"data\": {\n    \"device\": {\n      \"id\": \"507f1f77bcf86cd799439011\",\n      \"fcmToken\": \"token-to-deactivate\",\n      \"isActive\": false\n    }\n  }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Cleanup Inactive Devices",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"daysOld\": 30\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/devices/cleanup",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "cleanup"]
+            },
+            "description": "Permanently delete inactive devices older than specified days. Requires JWT authentication (Admin only).\n\n**Request Body:**\n- `daysOld` (optional): Number of days (default: 30)\n\n**Response Format:**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Request successful\",\n  \"data\": {\n    \"deletedCount\": 15\n  }\n}\n```"
+          },
+          "response": []
+        }
+      ],
+      "description": "Device management endpoints for FCM token registration and management"
+    },
+    {
       "name": "Messages",
       "item": [
         {
@@ -133,7 +296,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["messages"]
             },
-            "description": "Create an instant message (sent immediately). Requires JWT authentication.\n\n**Request Body:**\n- `message` (required): Message text\n- `link` (optional): URL link\n- `isPinned` (optional): Pin status (default: false)\n\n**Response Format:**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Request successful\",\n  \"data\": {\n    \"message\": {\n      \"_id\": \"507f1f77bcf86cd799439011\",\n      \"message\": \"This is an instant message\",\n      \"link\": \"https://example.com\",\n      \"isPinned\": false,\n      \"isSent\": false,\n      \"createdAt\": \"2025-03-20T11:00:00.000Z\",\n      \"updatedAt\": \"2025-03-20T11:00:00.000Z\"\n    }\n  }\n}\n```"
+            "description": "Create an instant message (sent immediately to all registered devices). Requires JWT authentication.\n\n**Request Body:**\n- `message` (required): Message text\n- `link` (optional): URL link\n- `isPinned` (optional): Pin status (default: false)\n\n**Response Format:**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Request successful\",\n  \"data\": {\n    \"message\": {\n      \"_id\": \"507f1f77bcf86cd799439011\",\n      \"message\": \"This is an instant message\",\n      \"link\": \"https://example.com\",\n      \"isPinned\": false,\n      \"isSent\": false,\n      \"createdAt\": \"2025-03-20T11:00:00.000Z\",\n      \"updatedAt\": \"2025-03-20T11:00:00.000Z\"\n    }\n  }\n}\n```"
           },
           "response": []
         },
@@ -166,7 +329,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["messages"]
             },
-            "description": "Create a scheduled message (sent at specified time). Requires JWT authentication.\n\n**Request Body:**\n- `message` (required): Message text\n- `link` (optional): URL link\n- `isPinned` (optional): Pin status (default: false)\n- `scheduledAt` (required for scheduled): ISO 8601 date-time\n\n**Note:** The scheduler runs every minute and will send this message when `scheduledAt` time is reached.\n\n**Response Format:**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Request successful\",\n  \"data\": {\n    \"message\": {\n      \"_id\": \"507f1f77bcf86cd799439011\",\n      \"message\": \"This is a scheduled message\",\n      \"link\": \"https://example.com\",\n      \"isPinned\": false,\n      \"scheduledAt\": \"2025-03-21T10:00:00.000Z\",\n      \"isSent\": false,\n      \"createdAt\": \"2025-03-20T11:00:00.000Z\",\n      \"updatedAt\": \"2025-03-20T11:00:00.000Z\"\n    }\n  }\n}\n```"
+            "description": "Create a scheduled message (sent at specified time to all registered devices). Requires JWT authentication.\n\n**Request Body:**\n- `message` (required): Message text\n- `link` (optional): URL link\n- `isPinned` (optional): Pin status (default: false)\n- `scheduledAt` (required for scheduled): ISO 8601 date-time\n\n**Note:** The scheduler runs every minute and will send this message to all active devices when `scheduledAt` time is reached.\n\n**Response Format:**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Request successful\",\n  \"data\": {\n    \"message\": {\n      \"_id\": \"507f1f77bcf86cd799439011\",\n      \"message\": \"This is a scheduled message\",\n      \"link\": \"https://example.com\",\n      \"isPinned\": false,\n      \"scheduledAt\": \"2025-03-21T10:00:00.000Z\",\n      \"isSent\": false,\n      \"createdAt\": \"2025-03-20T11:00:00.000Z\",\n      \"updatedAt\": \"2025-03-20T11:00:00.000Z\"\n    }\n  }\n}\n```"
           },
           "response": []
         },
