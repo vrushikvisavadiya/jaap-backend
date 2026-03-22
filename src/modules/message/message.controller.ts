@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { MessageService } from './message.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { SendNotificationDto } from './dto/send-notification.dto';
 
 @Controller('messages')
 export class MessageController {
@@ -20,6 +21,13 @@ export class MessageController {
   @Get('admin/history')
   async getHistory() {
     return this.messageService.history();
+  }
+
+  // Send notification to all active devices
+  @UseGuards(JwtAuthGuard)
+  @Post('send-notification')
+  async sendNotification(@Body() dto: SendNotificationDto) {
+    return this.messageService.sendNotificationToAllDevices(dto);
   }
 
   @UseGuards(JwtAuthGuard)

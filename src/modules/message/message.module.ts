@@ -7,6 +7,8 @@ import { Message, MessageSchema } from './schemas/message.schema';
 import { MessageService } from './message.service';
 import { MessageController } from './message.controller';
 import { JwtStrategy } from '../auth/jwt.strategy';
+import { FirebaseService } from './services/firebase.service';
+import { DeviceModule } from '../device/device.module';
 
 @Module({
   imports: [
@@ -20,8 +22,9 @@ import { JwtStrategy } from '../auth/jwt.strategy';
         signOptions: { expiresIn: '7d' },
       }),
     }),
+    DeviceModule,
   ],
-  providers: [MessageService, JwtStrategy],
+  providers: [MessageService, FirebaseService, JwtStrategy],
   controllers: [MessageController],
   exports: [MessageService],
 })

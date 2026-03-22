@@ -2,11 +2,16 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Message, MessageDocument } from './schemas/message.schema';
 import { Model } from 'mongoose';
+import { FirebaseService } from './services/firebase.service';
+import { DeviceService } from '../device/device.service';
+import { SendNotificationDto } from './dto/send-notification.dto';
 
 @Injectable()
 export class MessageService {
   constructor(
     @InjectModel(Message.name) private messageModel: Model<MessageDocument>,
+    private readonly firebaseService: FirebaseService,
+    private readonly deviceService: DeviceService,
   ) {}
 
   // Create message
@@ -89,5 +94,88 @@ export class MessageService {
       createdAt: { $lte: twoDaysAgo },
       isPinned: false,
     });
+  }
+
+  /**
+   * Send notification to all active devices
+   * Automatically handles invalid tokens and saves message to database
+   */
+  async sendNotificationToAllDevices(dto: SendNotificationDto) {
+    const { title, body, link, scheduledAt } = dto;
+
+    // If scheduled for future, save and return
+    if (scheduledAt) {
+      const scheduledDate = new Date(scheduledAt);
+      if (scheduledDate > new Date()) {
+        const message = await this.create({
+          message: `${title}: ${body}`,
+          title,
+          body,
+          link,
+          scheduledAt: scheduledDate,
+          isSent: false,
+        });
+
+        return {
+          success: true,
+          scheduled: true,
+          scheduledAt: scheduledDate,
+          message: message.message,
+        };
+      }
+    }
+
+    // Get all active FCM tokens
+    const activeTokens = await this.deviceService.getAllActiveTokens();
+
+    if (activeTokens.length === 0) {
+      return {
+        success: false,
+        error: 'No active devices found',
+        notification: {
+          successCount: 0,
+          failureCount: 0,
+          totalDevices: 0,
+        },
+      };
+    }
+
+    // Send notification via Firebase
+    const result = await this.firebaseService.sendNotificationToAll(
+      activeTokens,
+      title,
+      body,
+      link,
+    );
+
+    // Mark invalid tokens as inactive
+    if (result.invalidTokens.length > 0) {
+      await Promise.all(
+        result.invalidTokens.map((token) =>
+          this.deviceService.markTokenAsInactive(token),
+        ),
+      );
+    }
+
+    // Save message to database
+    const message = await this.create({
+      message: `${title}: ${body}`,
+      title,
+      body,
+      link,
+      isSent: true,
+      sentAt: new Date(),
+    });
+
+    return {
+      success: true,
+      notification: {
+        successCount: result.successCount,
+        failureCount: result.failureCount,
+        invalidTokens: result.invalidTokens,
+        totalDevices: activeTokens.length,
+      },
+      message: message.message,
+    };
   }
 }

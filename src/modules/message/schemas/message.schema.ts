@@ -9,6 +9,12 @@ export class Message {
   message: string;
 
   @Prop()
+  title?: string;
+
+  @Prop()
+  body?: string;
+
+  @Prop()
   link?: string;
 
   @Prop({ default: false })
@@ -19,6 +25,9 @@ export class Message {
 
   @Prop({ default: false })
   isSent: boolean;
+
+  @Prop()
+  sentAt?: Date;
 }
 
 export const MessageSchema = SchemaFactory.createForClass(Message);

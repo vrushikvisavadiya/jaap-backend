@@ -268,6 +268,72 @@
           "response": []
         },
         {
+          "name": "Send Notification to All Devices",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Emergency Alert\",\n  \"body\": \"This is an important notification message\",\n  \"link\": \"https://example.com/details\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/messages/send-notification",
+              "host": ["{{baseUrl}}"],
+              "path": ["messages", "send-notification"]
+            },
+            "description": "Send push notification to all active registered devices via Firebase Cloud Messaging. Requires JWT authentication.\n\n**Request Body:**\n- `title` (required): Notification title\n- `body` (required): Notification message body\n- `link` (optional): Deep link URL\n- `scheduledAt` (optional): ISO 8601 date-time for scheduled delivery\n\n**Features:**\n- Sends to all active FCM tokens in batches of 500\n- Automatically marks invalid tokens as inactive\n- Saves notification to message history\n- Returns detailed success/failure statistics\n\n**Response Format (Immediate Send):**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Request successful\",\n  \"data\": {\n    \"success\": true,\n    \"notification\": {\n      \"successCount\": 150,\n      \"failureCount\": 5,\n      \"invalidTokens\": [\"expired_token_1\", \"expired_token_2\"],\n      \"totalDevices\": 155\n    },\n    \"message\": {\n      \"_id\": \"507f1f77bcf86cd799439011\",\n      \"message\": \"Emergency Alert: This is an important notification message\",\n      \"title\": \"Emergency Alert\",\n      \"body\": \"This is an important notification message\",\n      \"link\": \"https://example.com/details\",\n      \"isSent\": true,\n      \"sentAt\": \"2025-03-20T11:30:00.000Z\",\n      \"isPinned\": false,\n      \"createdAt\": \"2025-03-20T11:30:00.000Z\",\n      \"updatedAt\": \"2025-03-20T11:30:00.000Z\"\n    }\n  }\n}\n```\n\n**Response Format (Scheduled):**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Request successful\",\n  \"data\": {\n    \"success\": true,\n    \"scheduled\": true,\n    \"scheduledAt\": \"2025-03-21T10:00:00.000Z\",\n    \"message\": {\n      \"_id\": \"507f1f77bcf86cd799439012\",\n      \"message\": \"Emergency Alert: This is an important notification message\",\n      \"title\": \"Emergency Alert\",\n      \"body\": \"This is an important notification message\",\n      \"scheduledAt\": \"2025-03-21T10:00:00.000Z\",\n      \"isSent\": false,\n      \"isPinned\": false,\n      \"createdAt\": \"2025-03-20T11:30:00.000Z\",\n      \"updatedAt\": \"2025-03-20T11:30:00.000Z\"\n    }\n  }\n}\n```\n\n**Response Format (No Active Devices):**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Request successful\",\n  \"data\": {\n    \"success\": false,\n    \"error\": \"No active devices found\",\n    \"notification\": {\n      \"successCount\": 0,\n      \"failureCount\": 0,\n      \"totalDevices\": 0\n    }\n  }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Send Scheduled Notification",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Scheduled Maintenance\",\n  \"body\": \"System will be down for maintenance tomorrow\",\n  \"link\": \"https://example.com/maintenance\",\n  \"scheduledAt\": \"2025-03-21T10:00:00.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/messages/send-notification",
+              "host": ["{{baseUrl}}"],
+              "path": ["messages", "send-notification"]
+            },
+            "description": "Schedule a push notification to be sent at a specific future time. The notification will be automatically sent to all active devices when the scheduled time is reached.\n\n**Request Body:**\n- `title` (required): Notification title\n- `body` (required): Notification message body\n- `link` (optional): Deep link URL\n- `scheduledAt` (required): ISO 8601 date-time (must be in the future)\n\n**How it works:**\n1. Notification is saved with `isSent: false`\n2. Cron job runs every minute\n3. When `scheduledAt` time is reached, notification is sent to all active devices\n4. Message is marked as `isSent: true` and `sentAt` is set\n5. Invalid tokens are automatically marked as inactive\n\n**Response Format:**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Request successful\",\n  \"data\": {\n    \"success\": true,\n    \"scheduled\": true,\n    \"scheduledAt\": \"2025-03-21T10:00:00.000Z\",\n    \"message\": {\n      \"_id\": \"507f1f77bcf86cd799439012\",\n      \"message\": \"Scheduled Maintenance: System will be down for maintenance tomorrow\",\n      \"title\": \"Scheduled Maintenance\",\n      \"body\": \"System will be down for maintenance tomorrow\",\n      \"link\": \"https://example.com/maintenance\",\n      \"scheduledAt\": \"2025-03-21T10:00:00.000Z\",\n      \"isSent\": false,\n      \"isPinned\": false,\n      \"createdAt\": \"2025-03-20T11:45:00.000Z\",\n      \"updatedAt\": \"2025-03-20T11:45:00.000Z\"\n    }\n  }\n}\n```"
+          },
+          "response": []
+        },
+        {
           "name": "Create Instant Message",
           "request": {
             "auth": {

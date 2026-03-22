@@ -18,20 +18,25 @@ export class FirebaseService {
   private readonly logger = new Logger(FirebaseService.name);
 
   constructor() {
-    const serviceAccountPath = path.resolve(
-      process.cwd(),
-      process.env.FIREBASE_KEY_PATH || '',
-    );
+    // Check if Firebase is already initialized
+    if (admin.apps.length === 0) {
+      const serviceAccountPath = path.resolve(
+        process.cwd(),
+        process.env.FIREBASE_KEY_PATH || '',
+      );
 
-    if (!serviceAccountPath) {
-      throw new Error('FIREBASE_KEY_PATH is not defined in .env');
+      if (!serviceAccountPath) {
+        throw new Error('FIREBASE_KEY_PATH is not defined in .env');
+      }
+
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccountPath),
+      });
+
+      this.logger.log('✅ Firebase initialized');
+    } else {
+      this.logger.log('✅ Firebase already initialized, reusing existing app');
     }
-
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccountPath),
-    });
-
-    this.logger.log('✅ Firebase initialized');
   }
 
   /**
