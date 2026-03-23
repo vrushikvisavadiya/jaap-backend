@@ -99,9 +99,10 @@ export class MessageService {
   /**
    * Send notification to all active devices
    * Automatically handles invalid tokens and saves message to database
+   * Supports filtering by device type (android, ios, or both)
    */
   async sendNotificationToAllDevices(dto: SendNotificationDto) {
-    const { title, body, link, scheduledAt } = dto;
+    const { title, body, link, scheduledAt, deviceType = 'both' } = dto;
 
     // If scheduled for future, save and return
     if (scheduledAt) {
@@ -120,18 +121,22 @@ export class MessageService {
           success: true,
           scheduled: true,
           scheduledAt: scheduledDate,
+          deviceType,
           message: message.message,
         };
       }
     }
 
-    // Get all active FCM tokens
-    const activeTokens = await this.deviceService.getAllActiveTokens();
+    // Get active FCM tokens filtered by device type
+    const activeTokens =
+      await this.deviceService.getActiveTokensByType(deviceType);
 
     if (activeTokens.length === 0) {
+      const deviceTypeText =
+        deviceType === 'both' ? '' : ` ${deviceType.toUpperCase()}`;
       return {
         success: false,
-        error: 'No active devices found',
+        error: `No active${deviceTypeText} devices found`,
         notification: {
           successCount: 0,
           failureCount: 0,
@@ -169,6 +174,7 @@ export class MessageService {
 
     return {
       success: true,
+      deviceType,
       notification: {
         successCount: result.successCount,
         failureCount: result.failureCount,

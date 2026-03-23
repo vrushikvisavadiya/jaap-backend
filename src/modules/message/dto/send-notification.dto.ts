@@ -3,4 +3,5 @@ export class SendNotificationDto {
   body: string;
   link?: string;
   scheduledAt?: string;
+  deviceType?: 'android' | 'ios' | 'both';
 }

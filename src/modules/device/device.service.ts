@@ -75,6 +75,29 @@ export class DeviceService {
   }
 
   /**
+   * Get active FCM tokens filtered by device type
+   * @param deviceType - 'android', 'ios', or 'both'
+   */
+  async getActiveTokensByType(
+    deviceType: 'android' | 'ios' | 'both' = 'both',
+  ): Promise<string[]> {
+    const query: any = { isActive: true };
+
+    // Add device type filter if not 'both'
+    if (deviceType !== 'both') {
+      query.deviceType = deviceType;
+    }
+
+    const activeDevices = await this.deviceModel
+      .find(query)
+      .select('fcmToken')
+      .lean()
+      .exec();
+
+    return activeDevices.map((device) => device.fcmToken);
+  }
+
+  /**
    * Get all active devices with full details
    */
   async getAllActiveDevices(): Promise<DeviceDocument[]> {
